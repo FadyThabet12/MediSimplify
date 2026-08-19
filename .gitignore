@@ -1,0 +1,45 @@
+@"
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+dist/
+build/
+*.egg-info/
+
+# Model files (large)
+*.faiss
+*.pkl
+*.h5
+*.keras
+*.safetensors
+*.pt
+*.pth
+*.onnx
+*.tflite
+*.pb
+*.hdf5
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Streamlit
+.streamlit/
+
+# Logs
+*.log
+*.tmp
+"@ | Out-File -FilePath .gitignore -Force -Encoding UTF8# Ignore Models folder
+Models/
