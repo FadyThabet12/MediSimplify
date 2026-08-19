@@ -20,7 +20,31 @@ An AI-powered medical assistant that simplifies complex medical information for 
 | 🏥 **Patient-Friendly** | Complex medical terms explained in simple language |
 
 ---
-
+#📁 Project Structure
+MediSimplify/
+│
+├── app.py                  # Main Streamlit application
+├── config.py               # Configuration and constants
+├── requirements.txt        # Python dependencies
+│
+├── pages/                  # Streamlit pages
+│   ├── home.py            # Home page
+│   ├── medical_qa.py      # Medical Q&A page
+│   ├── image_analysis.py  # X-Ray analysis page
+│   └── ocr_report.py      # Medical report OCR page
+│
+├── rag/                    # RAG pipeline
+│   ├── embeddings.py      # Query embedding generation
+│   ├── retrieval.py       # Document retrieval with FAISS
+│   └── pipeline.py        # Complete RAG pipeline
+│
+├── utils/                  # Utilities
+│   ├── helpers.py         # Helper functions
+│   └── preprocessing.py   # Data preprocessing
+│
+└── OCR/                    # Medical report OCR
+    ├── extractor.py       # Text extraction from images
+    └── processor.py       # Medical information extraction
 ## 🚀 Quick Start
 
 ### Prerequisites
