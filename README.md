@@ -8,7 +8,7 @@ It accepts **images, PDF reports, and text**, analyzes the medical content, and 
 
 ---
 
-## 🏗️ Architecture
+##  Architecture
 
 ```text
                          USER
@@ -47,23 +47,23 @@ It accepts **images, PDF reports, and text**, analyzes the medical content, and 
 
 ---
 
-## ✨ Features
+##  Features
 
-* 📄 Medical PDF processing
-* 🖼️ Medical image analysis
-* 🔍 OCR for medical reports
-* 🧠 Medical text analysis
-* 🤖 Fine-Tuned AI models
-* 📚 RAG with FAISS
-* 📝 Summary generation
-* 🔎 Key findings extraction
-* 📖 Medical terms explanation
-* 🌍 Arabic & English support
-* 🖥️ Streamlit interface
+*  Medical PDF processing
+*  Medical image analysis
+*  OCR for medical reports
+*  Medical text analysis
+*  Fine-Tuned AI models
+*  RAG with FAISS
+*  Summary generation
+*  Key findings extraction
+*  Medical terms explanation
+*  Arabic & English support
+*  Streamlit interface
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```text
 MediSimplify/
@@ -95,7 +95,7 @@ MediSimplify/
 
 ---
 
-## 🛠️ Technologies
+## Technologies
 
 * **Python**
 * **TensorFlow / Keras**
@@ -109,7 +109,7 @@ MediSimplify/
 
 ---
 
-## 🔄 Workflow
+##  Workflow
 
 ```text
 Input
@@ -133,14 +133,14 @@ Streamlit
 
 ---
 
-## 🚀 Run the Project
+##  Run the Project
 
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## 👨‍💻 MediSimplify
+##  MediSimplify
 
 **AI-Powered Medical Document Simplification & Explanation**
 
