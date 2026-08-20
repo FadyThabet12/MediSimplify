@@ -1,20 +1,21 @@
 import streamlit as st
 import torch
 from PIL import Image
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from torchvision import models
-from safetensors.torch import load_file
 from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 from pytorch_grad_cam.utils.image import show_cam_on_image
 
-from config import LABELS, DEVICE
+from config import DEVICE, BONE_LABELS
 from utils.preprocessing import preprocess_image, prepare_rgb_image
 from utils.helpers import process_prediction
 
-class DenseNet121_CheXpert(torch.nn.Module):
-    def __init__(self, num_labels=14):
+class DenseNet121_Bone(torch.nn.Module):
+    """DenseNet121 model for bone X-ray classification"""
+    def __init__(self, num_labels=12):
         super().__init__()
         self.densenet = models.densenet121(weights=None)
         num_features = self.densenet.classifier.in_features
@@ -24,20 +25,23 @@ class DenseNet121_CheXpert(torch.nn.Module):
         return self.densenet(x)
 
 @st.cache_resource
-def load_model():
-    model = DenseNet121_CheXpert(num_labels=14)
-    model_path = "Models/image_model/chest_model.pth"
+def load_bone_model():
+    """Load bone X-ray model"""
+    model = DenseNet121_Bone(num_labels=len(BONE_LABELS))
+    model_path = "Models/image_model/bone_model.pth"
     
-    state = torch.load(model_path, map_location=DEVICE)
-    model.load_state_dict(state, strict=False)
-    model = model.to(DEVICE)
-    model.eval()
-    return model
+    try:
+        state = torch.load(model_path, map_location=DEVICE)
+        model.load_state_dict(state, strict=False)
+        model = model.to(DEVICE)
+        model.eval()
+        return model
+    except FileNotFoundError:
+        st.error("❌ Bone model not found. Please download bone_model.pth and place it in Models/image_model/")
+        return None
 
-def predict_xray(image, model, threshold=0.5):
-    """Run prediction on X-ray image"""
-    import pandas as pd
-    
+def predict_bone_xray(image, model, threshold=0.5):
+    """Run prediction on bone X-ray image"""
     input_tensor = preprocess_image(image, DEVICE)
     
     with torch.no_grad():
@@ -45,7 +49,7 @@ def predict_xray(image, model, threshold=0.5):
         probabilities = torch.sigmoid(logits)[0].cpu().numpy()
     
     results = []
-    for label, score in zip(LABELS, probabilities):
+    for label, score in zip(BONE_LABELS, probabilities):
         results.append({
             "Finding": label,
             "Score": float(score),
@@ -63,8 +67,8 @@ def predict_xray(image, model, threshold=0.5):
         "positive_findings": results_df[results_df["Positive"]].copy()
     }
 
-def show_cam(image, model, target_layer, target_class, input_tensor):
-    """Generate Grad-CAM visualization"""
+def show_bone_cam(image, model, target_layer, target_class, input_tensor):
+    """Generate Grad-CAM visualization for bone X-ray"""
     targets = [ClassifierOutputTarget(target_class)]
     
     with GradCAM(model=model, target_layers=target_layer) as cam:
@@ -77,40 +81,69 @@ def show_cam(image, model, target_layer, target_class, input_tensor):
     return visualization
 
 def show():
-    st.title("🩻 Chest X-Ray Analysis")
-    st.markdown("Upload a chest X-ray image for AI-powered analysis.")
+    st.title("🦴 Bone X-Ray Analysis")
+    st.markdown("Upload a bone X-ray image for AI-powered fracture and pathology analysis.")
     
-    model = load_model()
+    model = load_bone_model()
+    
+    if model is None:
+        st.warning("⚠️ Bone model not loaded. Please check the model file.")
+        return
     
     uploaded_file = st.file_uploader(
-        "Choose a chest X-ray image...",
-        type=["jpg", "jpeg", "png"]
+        "Choose a bone X-ray image...",
+        type=["jpg", "jpeg", "png"],
+        key="bone_uploader"
     )
     
     if uploaded_file is not None:
         image = Image.open(uploaded_file).convert("RGB")
-        st.image(image, caption="Uploaded X-Ray", use_container_width=True)
+        st.image(image, caption="Uploaded Bone X-Ray", use_container_width=True)
         
-        if st.button("Analyze Image", type="primary"):
-            with st.spinner("Analyzing image..."):
-                result = predict_xray(image, model)
-                processed = process_prediction(result["results"])
+        col1, col2 = st.columns(2)
+        with col1:
+            threshold = st.slider("Confidence Threshold", 0.1, 0.9, 0.5, key="bone_threshold")
+        
+        with col2:
+            st.markdown(f"**Model:** DenseNet121 (Bone)")
+            st.markdown(f"**Classes:** {len(BONE_LABELS)}")
+        
+        if st.button("🔍 Analyze Bone X-Ray", type="primary"):
+            with st.spinner("Analyzing bone X-ray..."):
+                result = predict_bone_xray(image, model, threshold)
+                processed = process_prediction(result["results"], threshold)
                 
                 # Display results
                 st.success("Analysis complete!")
                 
                 # Status
                 if processed["status"] == "No significant finding detected":
-                    st.info("✅ No significant findings detected")
+                    st.info("✅ No significant bone abnormalities detected")
                 else:
-                    st.warning("⚠️ Potential findings detected")
+                    st.warning("⚠️ Potential bone abnormalities detected")
                 
                 # Findings table
                 st.markdown("### 📊 Findings")
+                
+                # Show all findings with scores
+                display_df = result["results"].copy()
+                display_df["Score"] = display_df["Score"].apply(lambda x: f"{x:.3f}")
+                display_df["Positive"] = display_df["Positive"].apply(lambda x: "✅" if x else "❌")
+                
                 st.dataframe(
-                    processed["findings"][["Finding", "Score"]],
-                    use_container_width=True
+                    display_df[["Finding", "Score", "Positive"]],
+                    use_container_width=True,
+                    hide_index=True
                 )
+                
+                # Positive findings summary
+                positive = processed["findings"]
+                if len(positive) > 0 and positive.iloc[0]["Finding"] != "No Finding":
+                    st.markdown("### 🎯 Positive Findings")
+                    for _, row in positive.iterrows():
+                        st.markdown(f"- **{row['Finding']}** ({row['Score']:.3f})")
+                else:
+                    st.info("No positive findings above threshold")
                 
                 # Grad-CAM Visualization
                 st.markdown("### 🔥 AI Attention Map (Grad-CAM)")
@@ -121,12 +154,12 @@ def show():
                 ]
                 
                 if len(positive_findings) > 0:
-                    target_class = LABELS.index(positive_findings.iloc[0]["Finding"])
+                    target_class = BONE_LABELS.index(positive_findings.iloc[0]["Finding"])
                     target_layer = [
                         model.densenet.features.denseblock4.denselayer16.conv2
                     ]
                     
-                    vis = show_cam(
+                    vis = show_bone_cam(
                         image, model, target_layer, target_class, result["input_tensor"]
                     )
                     
